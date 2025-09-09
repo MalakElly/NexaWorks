@@ -38,7 +38,7 @@ Dans **SQL Server Management Studio** :
 Tables : `Produit`, `Version`, `SystemeExploitation`, `Compatibilite`, `Ticket`  
 - 1 Produit ↔ n Versions  
 - n Versions ↔ n Systèmes (via Compatibilite)  
-- 1 Version ↔ n Tickets ; 1 Système ↔ n Tickets
+- 1 Version ↔ 0..n Tickets 
 
 ## Notes
 - Les champs textes longs utilisent `NVARCHAR(MAX)`.
