@@ -21,45 +21,64 @@ GO
 
 IF OBJECT_ID('dbo.GetTicketsByProduit', 'P') IS NOT NULL DROP PROCEDURE dbo.GetTicketsByProduit;
 GO
-CREATE PROCEDURE dbo.GetTicketsByProduit
-    @Statut NVARCHAR(20),
-    @NomProduit NVARCHAR(500),
-    @NumeroVersion NVARCHAR(10) = NULL
-AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT t.*, v.NumeroVersion, p.NomProduit
-    FROM Ticket t
-    JOIN Version v ON t.VersionID = v.VersionID
-    JOIN Produit p ON v.ProduitID = p.ProduitID
+
+    SELECT 
+        t.TicketID,
+        p.NomProduit,
+        v.NumeroVersion,
+        se.NomSE AS SystemeExploitation,
+        t.DateCreation,
+        t.DateResolution,
+        t.Statut,
+        t.Probleme,
+        t.Resolution
+    FROM dbo.Ticket t
+    JOIN dbo.[Version] v ON t.VersionID = v.VersionID
+    JOIN dbo.Produit     p ON v.ProduitID = p.ProduitID
+    JOIN dbo.SystemeExploitation se ON se.SEID = t.SEID
     WHERE t.Statut = @Statut
       AND p.NomProduit = @NomProduit
-      AND (@NumeroVersion IS NULL OR v.NumeroVersion = @NumeroVersion);
+      AND (@NumeroVersion IS NULL OR v.NumeroVersion = @NumeroVersion)
+    ORDER BY v.NumeroVersion, t.DateCreation DESC, t.TicketID DESC;
 END;
 GO
 
 IF OBJECT_ID('dbo.GetTicketsByPeriode', 'P') IS NOT NULL DROP PROCEDURE dbo.GetTicketsByPeriode;
 GO
 CREATE PROCEDURE dbo.GetTicketsByPeriode
-    @Statut NVARCHAR(20),
-    @NomProduit NVARCHAR(500),
-    @NumeroVersion NVARCHAR(10) = NULL,
-    @DateDebut DATETIME,
-    @DateFin DATETIME
+   @Statut         NVARCHAR(20),          -- N'En cours' | N'Résolu'
+    @NomProduit     NVARCHAR(100),         -- produit OBLIGATOIRE
+    @NumeroVersion  NVARCHAR(10) = NULL,   -- optionnel : NULL = toutes versions
+    @DateDebut      DATETIME2(0),
+    @DateFin        DATETIME2(0)
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT t.*, v.NumeroVersion, p.NomProduit
-    FROM Ticket t
-    JOIN Version v ON t.VersionID = v.VersionID
-    JOIN Produit p ON v.ProduitID = p.ProduitID
+
+    SELECT 
+        t.TicketID,
+        p.NomProduit,
+        v.NumeroVersion,
+        se.NomSE AS SystemeExploitation,
+        t.DateCreation,
+        t.DateResolution,
+        t.Statut,
+        t.Probleme,
+        t.Resolution
+    FROM dbo.Ticket t
+    JOIN dbo.[Version] v ON t.VersionID = v.VersionID
+    JOIN dbo.Produit     p ON v.ProduitID = p.ProduitID
+    JOIN dbo.SystemeExploitation se ON se.SEID = t.SEID
     WHERE t.Statut = @Statut
-      AND p.NomProduit = @NomProduit
+      AND p.NomProduit LIKE  N'%' + @NomProduit + N'%'
       AND (@NumeroVersion IS NULL OR v.NumeroVersion = @NumeroVersion)
       AND (
-          (t.DateCreation BETWEEN @DateDebut AND @DateFin)
-          OR (t.DateResolution BETWEEN @DateDebut AND @DateFin)
-      );
+             (@Statut = N'En cours' AND t.DateCreation   BETWEEN @DateDebut AND @DateFin)
+          OR (@Statut = N'Résolu'   AND t.DateResolution BETWEEN @DateDebut AND @DateFin)
+          )
+    ORDER BY t.DateCreation DESC, t.TicketID DESC;
 END;
 GO
 
@@ -67,7 +86,7 @@ IF OBJECT_ID('dbo.GetTicketsByKeywords', 'P') IS NOT NULL DROP PROCEDURE dbo.Get
 GO
 CREATE PROCEDURE dbo.GetTicketsByKeywords
     @Statut NVARCHAR(20),
-    @NomProduit NVARCHAR(500) = NULL,
+    @NomProduit NVARCHAR(100) = NULL,
     @NumeroVersion NVARCHAR(10) = NULL,
     @DateDebut DATETIME = NULL,
     @DateFin DATETIME = NULL,
@@ -87,3 +106,4 @@ BEGIN
       AND t.Probleme LIKE N'%' + @MotCle + N'%';
 END;
 GO
+
